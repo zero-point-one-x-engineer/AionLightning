@@ -1,0 +1,88 @@
+name: aion-lightning
+
+x-server-env: &server-env
+  DB_HOST: db
+  DB_PORT: "3306"
+  DB_USER: root
+  DB_PASSWORD: ${DB_PASSWORD:-aion}
+  GAME_IP: ${GAME_IP:-127.0.0.1}
+
+services:
+  db:
+    image: mysql:5.7
+    container_name: aion-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-aion}
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./AL-Login/sql/al_server_ls.sql:/docker-entrypoint-initdb.d/sql/al_server_ls.sql:ro
+      - ./AL-Game/sql/al_server_gs.sql:/docker-entrypoint-initdb.d/sql/al_server_gs.sql:ro
+      - ./docker/db-init.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --default-time-zone=+00:00
+      --sql-mode=NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - aion-net
+
+  login:
+    image: aion-lightning:latest
+    container_name: aion-login
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["login"]
+    environment:
+      <<: *server-env
+    ports:
+      - "2106:2106"   # Aion client -> login server
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - aion-net
+
+  game:
+    image: aion-lightning:latest
+    container_name: aion-game
+    restart: unless-stopped
+    command: ["game"]
+    environment:
+      <<: *server-env
+    ports:
+      - "7777:7777"   # Aion client -> game server
+    depends_on:
+      login:
+        condition: service_started
+      chat:
+        condition: service_started
+    networks:
+      - aion-net
+
+  chat:
+    image: aion-lightning:latest
+    container_name: aion-chat
+    restart: unless-stopped
+    command: ["chat"]
+    environment:
+      <<: *server-env
+    ports:
+      - "10241:10241" # Aion client -> chat server
+    networks:
+      - aion-net
+
+networks:
+  aion-net:
+    driver: bridge
+
+volumes:
+  db-data:

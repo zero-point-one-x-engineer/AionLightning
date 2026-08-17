@@ -1,0 +1,27 @@
+.git
+.gitignore
+*.log
+log/
+build/
+Tools/PacketSamurai
+Tools/Client-Mods
+Tools/D3D8THK
+Tools/Aion UnPak
+Tools/Aion Extract
+Tools/AIONdisasm
+Tools/AIONencdec
+Tools/GeoDataBuilderJ
+Tools/NoIpMaker
+Tools/ShopEditor
+Tools/Parser
+Tools/EventEngine
+Tools/Helper
+Tools/DropList
+Tools/AE-Manager
+Tools/BuildTools.bat
+Tools/Database-Installation.bat
+AL-Game/build
+AL-Login/build
+AL-Chat/build
+AL-Commons/build
+docker-compose.yml
